@@ -17,6 +17,8 @@ import {
   LogOut,
   MapPin,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   PackageCheck,
   Search,
   ShieldCheck,
@@ -77,6 +79,7 @@ export default function Page() {
   const [paid, setPaid] = useState(false)
   const [notice, setNotice] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [noticeVisible, setNoticeVisible] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -98,14 +101,22 @@ export default function Page() {
     setRequests((current) => current.map((request) => request.id === id ? { ...request, status: 'Confirmed' } : request))
     setNotice(`${id} confirmed. The recipient has been notified.`)
   }
+  const navigateTo = (label: string) => {
+    setActiveNav(label)
+    setNotice(`${label} selected`)
+    setMobileOpen(false)
+    if (label === 'Overview') window.scrollTo({ top: 0, behavior: 'smooth' })
+    else document.getElementById(label === 'Find organs' ? 'find-organs' : label === 'My requests' ? 'my-requests' : 'messages')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <main className="app-shell">
-      <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}>
+      <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''} ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <button className="sidebar-toggle" onClick={() => setSidebarCollapsed(!sidebarCollapsed)} aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>{sidebarCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}<span>{sidebarCollapsed ? 'Expand menu' : 'Collapse menu'}</span></button>
         <div className="brand"><div className="brand-mark"><HeartPulse /></div><span>Organ<span className="brand-accent">Ease</span></span></div>
         <div className="workspace"><div className="workspace-icon"><Stethoscope /></div><div><strong>{role === 'recipient' ? 'My OrganEase account' : 'Pune Procurement Centre'}</strong><span>{role === 'recipient' ? 'Recipient account' : 'Procurement account'}</span></div><ChevronDown /></div>
         <nav className="nav-list" aria-label="Primary navigation">
-          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setNotice(`${label} selected`); setMobileOpen(false) }}><Icon />{label}{label === 'My requests' && <span className="nav-count">3</span>}</button>)}
+          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => navigateTo(label)}><Icon />{label}{label === 'My requests' && <span className="nav-count">3</span>}</button>)}
         </nav>
         <div className="sidebar-bottom"><button className="nav-item"><ShieldCheck />Compliance centre</button><button className="nav-item"><LogOut />Sign out</button><div className="user-chip"><div className="avatar">AK</div><div><strong>Arjun Kapoor</strong><span>OrganEase member</span></div><ChevronDown /></div></div>
       </aside>
@@ -119,10 +130,10 @@ export default function Page() {
 
           {role === 'recipient' ? <>
             <div className="metrics"><div className="metric-card metric-primary"><div className="metric-icon"><Droplets /></div><div><span>Available nearby</span><strong>24 <small>organs</small></strong><em><ArrowUpRight /> 12% from yesterday</em></div></div><div className="metric-card"><div className="metric-icon soft-blue"><Clock3 /></div><div><span>Avg. response time</span><strong>18 <small>min</small></strong><em className="neutral">Across 8 centres</em></div></div><div className="metric-card"><div className="metric-icon soft-amber"><Activity /></div><div><span>Active requests</span><strong>03</strong><em className="neutral">1 needs attention</em></div></div><div className="metric-card"><div className="metric-icon soft-green"><ShieldCheck /></div><div><span>Transfers completed</span><strong>18</strong><em>98% success rate</em></div></div></div>
-            <div className="section-head"><div><h2>Find available organs</h2><p>Real-time inventory from verified regional centres</p></div><button className="outline-button"><MapPin />Pune region <ChevronDown /></button></div>
+            <div id="find-organs" className="section-head"><div><h2>Find available organs</h2><p>Real-time inventory from verified regional centres</p></div><button className="outline-button"><MapPin />Pune region <ChevronDown /></button></div>
             <div className="filter-row"><div className="filter-search"><Search /><input placeholder="Search by organ or centre" /></div><select value={organFilter} onChange={(e) => setOrganFilter(e.target.value)} aria-label="Filter by organ"><option>All organs</option><option>Kidney</option><option>Liver</option><option>Heart</option><option>Pancreas</option></select><select value={bloodFilter} onChange={(e) => setBloodFilter(e.target.value)} aria-label="Filter by blood group"><option>All blood groups</option><option>O+</option><option>A+</option><option>B+</option><option>AB+</option><option>O-</option></select><button className={`filter-button ${urgencyOnly ? 'selected' : ''}`} onClick={() => setUrgencyOnly(!urgencyOnly)}><SlidersHorizontal />Urgent only</button></div>
             <div className="inventory-table"><div className="table-header"><span>Organ & status</span><span>Compatibility</span><span>Location</span><span>Preservation window</span><span /></div>{filtered.map((item) => <div className="organ-row" key={item.id}><div className="organ-cell"><div className={`organ-symbol ${item.organ.toLowerCase()}`}>{item.organ === 'Heart' ? <HeartPulse /> : <Droplets />}</div><div><strong>{item.organ}</strong><span>{item.id} · {item.donor}</span><StatusBadge status={item.urgency} /></div></div><div><strong className="blood-pill">{item.blood}</strong><span className="cell-muted">Compatible group</span></div><div><strong>{item.location}</strong><span className="cell-muted"><MapPin />{item.distance} away</span></div><div><strong className={item.urgency === 'Critical' ? 'time-critical' : ''}>{item.expires}</strong><span className="cell-muted">{item.preservation}</span></div><button className="request-button" onClick={() => openRequest(item)}>View & request <ArrowUpRight /></button></div>)}{filtered.length === 0 && <div className="empty-state"><Search /><strong>No organs match these filters</strong><span>Try clearing an eligibility or urgency filter.</span></div>}</div>
-            <div className="below-grid"><div className="panel"><div className="panel-head"><div><h2>Recent requests</h2><p>Track your active organ requests</p></div><button className="text-button" onClick={() => setActiveNav('My requests')}>View all <ArrowUpRight /></button></div>{requests.slice(0, 3).map((request) => <div className="request-row" key={request.id}><div className="request-icon"><FileText /></div><div className="request-main"><strong>{request.organ} · {request.blood}</strong><span>{request.id} · {request.hospital}</span></div><span className="request-age">{request.age}</span><StatusBadge status={request.status} /></div>)}</div><div className="help-card"><div className="help-icon"><ShieldCheck /></div><h3>Need help coordinating?</h3><p>Our transfer desk is available for urgent cases and centre coordination.</p><button className="outline-button">Contact transfer desk <ArrowUpRight /></button></div></div>
+            <div className="below-grid"><div id="my-requests" className="panel"><div className="panel-head"><div><h2>Recent requests</h2><p>Track your active organ requests</p></div><button className="text-button" onClick={() => setActiveNav('My requests')}>View all <ArrowUpRight /></button></div>{requests.slice(0, 3).map((request) => <div className="request-row" key={request.id}><div className="request-icon"><FileText /></div><div className="request-main"><strong>{request.organ} · {request.blood}</strong><span>{request.id} · {request.hospital}</span></div><span className="request-age">{request.age}</span><StatusBadge status={request.status} /></div>)}</div><div id="messages" className="help-card"><div className="help-icon"><ShieldCheck /></div><h3>Need help coordinating?</h3><p>Our transfer desk is available for urgent cases and centre coordination.</p><button className="outline-button">Contact transfer desk <ArrowUpRight /></button></div></div>
           </> : <ProcurementView requests={requests} onConfirm={confirmRequest} />}
           <footer>OrganEase is a coordination prototype for transplant networks. <span>Privacy & compliance</span><span>Support</span><span>v0.8.2</span></footer>
         </div>
