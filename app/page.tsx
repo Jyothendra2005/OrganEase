@@ -67,7 +67,7 @@ function StatusBadge({ status }: { status: Organ['urgency'] | string }) {
 }
 
 export default function Page() {
-  const [role, setRole] = useState<'hospital' | 'center'>('hospital')
+  const [role, setRole] = useState<'recipient' | 'center'>('recipient')
   const [activeNav, setActiveNav] = useState('Overview')
   const [organFilter, setOrganFilter] = useState('All organs')
   const [bloodFilter, setBloodFilter] = useState('All blood groups')
@@ -93,28 +93,28 @@ export default function Page() {
   }
   const confirmRequest = (id: string) => {
     setRequests((current) => current.map((request) => request.id === id ? { ...request, status: 'Confirmed' } : request))
-    setNotice(`${id} confirmed. The hospital has been notified.`)
+    setNotice(`${id} confirmed. The recipient has been notified.`)
   }
 
   return (
     <main className="app-shell">
       <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}>
         <div className="brand"><div className="brand-mark"><HeartPulse /></div><span>Organ<span className="brand-accent">Ease</span></span></div>
-        <div className="workspace"><div className="workspace-icon"><Stethoscope /></div><div><strong>{role === 'hospital' ? 'Sahyadri Hospitals' : 'Pune Procurement Centre'}</strong><span>{role === 'hospital' ? 'Hospital account' : 'Procurement account'}</span></div><ChevronDown /></div>
+        <div className="workspace"><div className="workspace-icon"><Stethoscope /></div><div><strong>{role === 'recipient' ? 'My OrganEase account' : 'Pune Procurement Centre'}</strong><span>{role === 'recipient' ? 'Recipient account' : 'Procurement account'}</span></div><ChevronDown /></div>
         <nav className="nav-list" aria-label="Primary navigation">
           {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileOpen(false) }}><Icon />{label}{label === 'My requests' && <span className="nav-count">3</span>}</button>)}
         </nav>
-        <div className="sidebar-bottom"><button className="nav-item"><ShieldCheck />Compliance centre</button><button className="nav-item"><LogOut />Sign out</button><div className="user-chip"><div className="avatar">DM</div><div><strong>Dr. Meera Joshi</strong><span>Transplant coordinator</span></div><ChevronDown /></div></div>
+        <div className="sidebar-bottom"><button className="nav-item"><ShieldCheck />Compliance centre</button><button className="nav-item"><LogOut />Sign out</button><div className="user-chip"><div className="avatar">AK</div><div><strong>Arjun Kapoor</strong><span>OrganEase member</span></div><ChevronDown /></div></div>
       </aside>
 
       <section className="main-area">
-        <header className="topbar"><button className="mobile-menu" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Open navigation"><Menu /></button><div className="breadcrumb"><span>OrganEase</span><span>/</span><strong>{role === 'hospital' ? 'Hospital overview' : 'Procurement centre'}</strong></div><div className="top-actions"><div className="global-search"><Search /><input aria-label="Search" placeholder="Search organs, centres, requests..." /></div><button className="icon-button" aria-label="Notifications"><Bell /><span className="notification-dot" /></button><button className="top-avatar">DM</button></div></header>
+        <header className="topbar"><button className="mobile-menu" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Open navigation"><Menu /></button><div className="breadcrumb"><span>OrganEase</span><span>/</span><strong>{role === 'recipient' ? 'Recipient dashboard' : 'Procurement centre'}</strong></div><div className="top-actions"><div className="global-search"><Search /><input aria-label="Search" placeholder="Search organs, centres, requests..." /></div><button className="icon-button" aria-label="Notifications"><Bell /><span className="notification-dot" /></button><button className="top-avatar">DM</button></div></header>
         <div className="content">
           <div className="demo-banner"><AlertTriangle /><span><strong>Demo environment</strong> &nbsp; This prototype uses simulated records. No real medical or payment transactions are processed.</span><button aria-label="Dismiss notice"><X /></button></div>
-          <div className="page-heading"><div><p className="eyebrow">{role === 'hospital' ? 'Tuesday, 28 August 2026' : 'Operations console'}</p><h1>{role === 'hospital' ? 'Good morning, Dr. Joshi' : 'Procurement centre dashboard'}</h1><p className="heading-sub">{role === 'hospital' ? 'Find compatible organs faster. Every minute matters.' : 'Review incoming requests and keep transfers moving.'}</p></div><div className="role-switcher"><span>Viewing as</span><button className={role === 'hospital' ? 'role-active' : ''} onClick={() => setRole('hospital')}><Stethoscope />Hospital</button><button className={role === 'center' ? 'role-active' : ''} onClick={() => setRole('center')}><PackageCheck />Procurement</button></div></div>
+          <div className="page-heading"><div><p className="eyebrow">{role === 'recipient' ? 'Tuesday, 28 August 2026' : 'Operations console'}</p><h1>{role === 'recipient' ? 'Welcome back to OrganEase' : 'Procurement centre dashboard'}</h1><p className="heading-sub">{role === 'recipient' ? 'Find compatible organs faster. Every minute matters.' : 'Review incoming requests and keep transfers moving.'}</p></div><div className="role-switcher"><span>Viewing as</span><button className={role === 'recipient' ? 'role-active' : ''} onClick={() => setRole('hospital')}><UserRound />Recipient</button><button className={role === 'center' ? 'role-active' : ''} onClick={() => setRole('center')}><PackageCheck />Procurement</button></div></div>
           {notice && <div className="toast"><Check /><span>{notice}</span><button onClick={() => setNotice('')}><X /></button></div>}
 
-          {role === 'hospital' ? <>
+          {role === 'recipient' ? <>
             <div className="metrics"><div className="metric-card metric-primary"><div className="metric-icon"><Droplets /></div><div><span>Available nearby</span><strong>24 <small>organs</small></strong><em><ArrowUpRight /> 12% from yesterday</em></div></div><div className="metric-card"><div className="metric-icon soft-blue"><Clock3 /></div><div><span>Avg. response time</span><strong>18 <small>min</small></strong><em className="neutral">Across 8 centres</em></div></div><div className="metric-card"><div className="metric-icon soft-amber"><Activity /></div><div><span>Active requests</span><strong>03</strong><em className="neutral">1 needs attention</em></div></div><div className="metric-card"><div className="metric-icon soft-green"><ShieldCheck /></div><div><span>Transfers completed</span><strong>18</strong><em>98% success rate</em></div></div></div>
             <div className="section-head"><div><h2>Find available organs</h2><p>Real-time inventory from verified regional centres</p></div><button className="outline-button"><MapPin />Pune region <ChevronDown /></button></div>
             <div className="filter-row"><div className="filter-search"><Search /><input placeholder="Search by organ or centre" /></div><select value={organFilter} onChange={(e) => setOrganFilter(e.target.value)} aria-label="Filter by organ"><option>All organs</option><option>Kidney</option><option>Liver</option><option>Heart</option><option>Pancreas</option></select><select value={bloodFilter} onChange={(e) => setBloodFilter(e.target.value)} aria-label="Filter by blood group"><option>All blood groups</option><option>O+</option><option>A+</option><option>B+</option><option>AB+</option><option>O-</option></select><button className={`filter-button ${urgencyOnly ? 'selected' : ''}`} onClick={() => setUrgencyOnly(!urgencyOnly)}><SlidersHorizontal />Urgent only</button></div>
