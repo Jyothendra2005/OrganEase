@@ -11,13 +11,14 @@ button { cursor: pointer; }
 .sidebar-toggle { align-self: flex-end; display: inline-flex; align-items: center; gap: 7px; border: 0; background: transparent; color: #9eb7bc; padding: 4px 5px 12px; font-size: 11px; }
 .sidebar-toggle svg { width: 17px; }
 .sidebar-toggle:hover { color: #fff; }
-.sidebar-collapsed { width: 76px; flex-basis: 76px; padding-left: 10px; padding-right: 10px; }
-.sidebar-collapsed .sidebar-toggle { align-self: center; }
-.sidebar-collapsed .sidebar-toggle span, .sidebar-collapsed .brand > span, .sidebar-collapsed .workspace > div:not(.workspace-icon), .sidebar-collapsed .workspace > svg, .sidebar-collapsed .nav-item:not(.nav-active)::after, .sidebar-collapsed .nav-item, .sidebar-collapsed .user-chip > div:not(.avatar), .sidebar-collapsed .user-chip > svg { font-size: 0; }
+.sidebar-collapsed { width: 64px; flex-basis: 64px; padding-left: 8px; padding-right: 8px; }
+.sidebar-collapsed .sidebar-toggle { align-self: center; width: 100%; justify-content: center; }
+.sidebar-collapsed .sidebar-toggle span, .sidebar-collapsed .brand > span, .sidebar-collapsed .workspace > div:not(.workspace-icon), .sidebar-collapsed .workspace > svg, .sidebar-collapsed .nav-item > :not(svg):not(.nav-count), .sidebar-collapsed .user-chip > div:not(.avatar), .sidebar-collapsed .user-chip > svg { display: none; }
 .sidebar-collapsed .brand, .sidebar-collapsed .workspace, .sidebar-collapsed .nav-item, .sidebar-collapsed .user-chip { justify-content: center; }
-.sidebar-collapsed .nav-item { gap: 0; padding-left: 10px; padding-right: 10px; }
+.sidebar-collapsed .brand { padding-left: 0; padding-right: 0; }
+.sidebar-collapsed .nav-item { gap: 0; padding-left: 8px; padding-right: 8px; position: relative; }
 .sidebar-collapsed .nav-item svg { width: 19px; }
-.sidebar-collapsed .nav-count { font-size: 9px; padding: 1px 5px; position: absolute; margin: -24px 0 0 25px; }
+.sidebar-collapsed .nav-count { font-size: 9px; padding: 1px 5px; position: absolute; right: 1px; top: 2px; }
 .sidebar-collapsed .workspace { padding: 9px; }
 .sidebar-collapsed .user-chip { padding-left: 0; padding-right: 0; }
 .brand { display:flex; align-items:center; gap:10px; font-size: 22px; font-weight: 700; letter-spacing:-.8px; padding: 0 11px 30px; color:#fff; }.brand-mark { width:32px;height:32px;border-radius:9px;background:#46b8aa;display:grid;place-items:center;color:#fff }.brand-mark svg { width:20px }.brand-accent { color:#63d0c1 }
