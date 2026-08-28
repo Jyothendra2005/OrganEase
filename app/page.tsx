@@ -77,12 +77,15 @@ export default function Page() {
   const [paid, setPaid] = useState(false)
   const [notice, setNotice] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [noticeVisible, setNoticeVisible] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const filtered = useMemo(() => inventory.filter((item) =>
     (organFilter === 'All organs' || item.organ === organFilter) &&
     (bloodFilter === 'All blood groups' || item.blood === bloodFilter) &&
-    (!urgencyOnly || item.urgency === 'Critical')
-  ), [organFilter, bloodFilter, urgencyOnly])
+    (!urgencyOnly || item.urgency === 'Critical') &&
+    (!searchQuery || `${item.organ} ${item.location} ${item.center} ${item.blood}`.toLowerCase().includes(searchQuery.toLowerCase()))
+  ), [organFilter, bloodFilter, urgencyOnly, searchQuery])
 
   const openRequest = (organ: Organ) => { setSelected(organ); setPaid(false) }
   const submitRequest = () => {
@@ -102,16 +105,16 @@ export default function Page() {
         <div className="brand"><div className="brand-mark"><HeartPulse /></div><span>Organ<span className="brand-accent">Ease</span></span></div>
         <div className="workspace"><div className="workspace-icon"><Stethoscope /></div><div><strong>{role === 'recipient' ? 'My OrganEase account' : 'Pune Procurement Centre'}</strong><span>{role === 'recipient' ? 'Recipient account' : 'Procurement account'}</span></div><ChevronDown /></div>
         <nav className="nav-list" aria-label="Primary navigation">
-          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setMobileOpen(false) }}><Icon />{label}{label === 'My requests' && <span className="nav-count">3</span>}</button>)}
+          {navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${activeNav === label ? 'nav-active' : ''}`} onClick={() => { setActiveNav(label); setNotice(`${label} selected`); setMobileOpen(false) }}><Icon />{label}{label === 'My requests' && <span className="nav-count">3</span>}</button>)}
         </nav>
         <div className="sidebar-bottom"><button className="nav-item"><ShieldCheck />Compliance centre</button><button className="nav-item"><LogOut />Sign out</button><div className="user-chip"><div className="avatar">AK</div><div><strong>Arjun Kapoor</strong><span>OrganEase member</span></div><ChevronDown /></div></div>
       </aside>
 
       <section className="main-area">
-        <header className="topbar"><button className="mobile-menu" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Open navigation"><Menu /></button><div className="breadcrumb"><span>OrganEase</span><span>/</span><strong>{role === 'recipient' ? 'Recipient dashboard' : 'Procurement centre'}</strong></div><div className="top-actions"><div className="global-search"><Search /><input aria-label="Search" placeholder="Search organs, centres, requests..." /></div><button className="icon-button" aria-label="Notifications"><Bell /><span className="notification-dot" /></button><button className="top-avatar">DM</button></div></header>
+        <header className="topbar"><button className="mobile-menu" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Open navigation"><Menu /></button><div className="breadcrumb"><span>OrganEase</span><span>/</span><strong>{role === 'recipient' ? 'Recipient dashboard' : 'Procurement centre'}</strong></div><div className="top-actions"><div className="global-search"><Search /><input aria-label="Search" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search organs, centres, requests..." /></div><button className="icon-button" aria-label="Notifications"><Bell /><span className="notification-dot" /></button><button className="top-avatar">DM</button></div></header>
         <div className="content">
-          <div className="demo-banner"><AlertTriangle /><span><strong>Demo environment</strong> &nbsp; This prototype uses simulated records. No real medical or payment transactions are processed.</span><button aria-label="Dismiss notice"><X /></button></div>
-          <div className="page-heading"><div><p className="eyebrow">{role === 'recipient' ? 'Tuesday, 28 August 2026' : 'Operations console'}</p><h1>{role === 'recipient' ? 'Welcome back to OrganEase' : 'Procurement centre dashboard'}</h1><p className="heading-sub">{role === 'recipient' ? 'Find compatible organs faster. Every minute matters.' : 'Review incoming requests and keep transfers moving.'}</p></div><div className="role-switcher"><span>Viewing as</span><button className={role === 'recipient' ? 'role-active' : ''} onClick={() => setRole('hospital')}><UserRound />Recipient</button><button className={role === 'center' ? 'role-active' : ''} onClick={() => setRole('center')}><PackageCheck />Procurement</button></div></div>
+          {noticeVisible && <div className="demo-banner"><AlertTriangle /><span><strong>Demo environment</strong> &nbsp; This prototype uses simulated records. No real medical or payment transactions are processed.</span><button aria-label="Dismiss notice" onClick={() => setNoticeVisible(false)}><X /></button></div>}
+          <div className="page-heading"><div><p className="eyebrow">{role === 'recipient' ? 'Tuesday, 28 August 2026' : 'Operations console'}</p><h1>{role === 'recipient' ? 'Welcome back to OrganEase' : 'Procurement centre dashboard'}</h1><p className="heading-sub">{role === 'recipient' ? 'Find compatible organs faster. Every minute matters.' : 'Review incoming requests and keep transfers moving.'}</p></div><div className="role-switcher"><span>Viewing as</span><button className={role === 'recipient' ? 'role-active' : ''} onClick={() => { setRole('recipient'); setActiveNav('Overview'); setMobileOpen(false) }}><UserRound />Recipient</button><button className={role === 'center' ? 'role-active' : ''} onClick={() => { setRole('center'); setActiveNav('Overview'); setMobileOpen(false) }}><PackageCheck />Procurement</button></div></div>
           {notice && <div className="toast"><Check /><span>{notice}</span><button onClick={() => setNotice('')}><X /></button></div>}
 
           {role === 'recipient' ? <>
