@@ -11,7 +11,6 @@ import {
   Droplets,
   FileText,
   HeartPulse,
-  Inbox,
   LayoutDashboard,
   LogOut,
   MapPin,
@@ -58,8 +57,9 @@ const navItems = [
   { label: 'Overview', icon: LayoutDashboard },
   { label: 'Find organs', icon: Search },
   { label: 'My requests', icon: FileText },
-  { label: 'Messages', icon: Inbox },
 ]
+
+const regions = ['Pune region', 'Mumbai region', 'Nashik region', 'Nagpur region']
 
 function StatusBadge({ status }: { status: Organ['urgency'] | string }) {
   const critical = status === 'Critical' || status === 'Awaiting payment'
@@ -80,8 +80,11 @@ export default function Page() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [region, setRegion] = useState('Pune region')
+  const [regionOpen, setRegionOpen] = useState(false)
 
   const filtered = useMemo(() => inventory.filter((item) =>
+    (region === 'Pune region' || item.location.toLowerCase().includes(region.replace(' region', '').toLowerCase())) &&
     (organFilter === 'All organs' || item.organ === organFilter) &&
     (bloodFilter === 'All blood groups' || item.blood === bloodFilter) &&
     (!urgencyOnly || item.urgency === 'Critical') &&
@@ -127,7 +130,7 @@ export default function Page() {
 
           {role === 'recipient' ? <>
             <div className="metrics"><div className="metric-card metric-primary"><div className="metric-icon"><Droplets /></div><div><span>Available nearby</span><strong>24 <small>organs</small></strong><em><ArrowUpRight /> 12% from yesterday</em></div></div><div className="metric-card"><div className="metric-icon soft-blue"><Clock3 /></div><div><span>Avg. response time</span><strong>18 <small>min</small></strong><em className="neutral">Across 8 centres</em></div></div><div className="metric-card"><div className="metric-icon soft-amber"><Activity /></div><div><span>Active requests</span><strong>03</strong><em className="neutral">1 needs attention</em></div></div><div className="metric-card"><div className="metric-icon soft-green"><ShieldCheck /></div><div><span>Transfers completed</span><strong>18</strong><em>98% success rate</em></div></div></div>
-            <div id="find-organs" className="section-head"><div><h2>Find available organs</h2><p>Real-time inventory from verified regional centres</p></div><button className="outline-button"><MapPin />Pune region <ChevronDown /></button></div>
+            <div id="find-organs" className="section-head"><div><h2>Find available organs</h2><p>Real-time inventory from verified regional centres</p></div><div className="region-picker"><button className="outline-button" onClick={() => setRegionOpen(!regionOpen)} aria-expanded={regionOpen} aria-haspopup="listbox"><MapPin />{region}<ChevronDown /></button>{regionOpen && <div className="region-menu" role="listbox" aria-label="Select region">{regions.map((option) => <button key={option} role="option" aria-selected={region === option} className={region === option ? 'region-selected' : ''} onClick={() => { setRegion(option); setRegionOpen(false); setNotice(`${option} selected`) }}>{option}<Check /></button>)}</div>}</div></div>
             <div className="filter-row"><div className="filter-search"><Search /><input aria-label="Search available organs" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by organ or centre" /></div><select value={organFilter} onChange={(e) => setOrganFilter(e.target.value)} aria-label="Filter by organ"><option>All organs</option><option>Kidney</option><option>Liver</option><option>Heart</option><option>Pancreas</option></select><select value={bloodFilter} onChange={(e) => setBloodFilter(e.target.value)} aria-label="Filter by blood group"><option>All blood groups</option><option>O+</option><option>A+</option><option>B+</option><option>AB+</option><option>O-</option></select><button className={`filter-button ${urgencyOnly ? 'selected' : ''}`} onClick={() => setUrgencyOnly(!urgencyOnly)}><SlidersHorizontal />Urgent only</button></div>
             <div className="inventory-table"><div className="table-header"><span>Organ & status</span><span>Compatibility</span><span>Location</span><span>Preservation window</span><span /></div>{filtered.map((item) => <div className="organ-row" key={item.id}><div className="organ-cell"><div className={`organ-symbol ${item.organ.toLowerCase()}`}>{item.organ === 'Heart' ? <HeartPulse /> : <Droplets />}</div><div><strong>{item.organ}</strong><span>{item.id} · {item.donor}</span><StatusBadge status={item.urgency} /></div></div><div><strong className="blood-pill">{item.blood}</strong><span className="cell-muted">Compatible group</span></div><div><strong>{item.location}</strong><span className="cell-muted"><MapPin />{item.distance} away</span></div><div><strong className={item.urgency === 'Critical' ? 'time-critical' : ''}>{item.expires}</strong><span className="cell-muted">{item.preservation}</span></div><button className="request-button" onClick={() => openRequest(item)}>View & request <ArrowUpRight /></button></div>)}{filtered.length === 0 && <div className="empty-state"><Search /><strong>No organs match these filters</strong><span>Try clearing an eligibility or urgency filter.</span></div>}</div>
             <div className="below-grid"><div id="my-requests" className="panel"><div className="panel-head"><div><h2>Recent requests</h2><p>Track your active organ requests</p></div><button className="text-button" onClick={() => setActiveNav('My requests')}>View all <ArrowUpRight /></button></div>{requests.slice(0, 3).map((request) => <div className="request-row" key={request.id}><div className="request-icon"><FileText /></div><div className="request-main"><strong>{request.organ} · {request.blood}</strong><span>{request.id} · {request.hospital}</span></div><span className="request-age">{request.age}</span><StatusBadge status={request.status} /></div>)}</div><div id="messages" className="help-card"><div className="help-icon"><ShieldCheck /></div><h3>Need help coordinating?</h3><p>Our transfer desk is available for urgent cases and centre coordination.</p><button className="outline-button">Contact transfer desk <ArrowUpRight /></button></div></div>
