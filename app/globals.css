@@ -46,6 +46,14 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { * {scroll-behavior:auto!important;transition:none!important} }
 .auth-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) 42%; background: #f5f7fa; }
 .auth-panel { width: min(460px, calc(100% - 48px)); margin: auto; padding: 30px 0; }
+.form-page-shell { position: relative; display: flex; justify-content: center; overflow: hidden; background: #eef4f5; isolation: isolate; }
+.form-page-shell::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(115deg, rgba(255,255,255,.78), transparent 42%), repeating-linear-gradient(90deg, transparent 0 79px, rgba(8,127,130,.045) 80px, transparent 81px); }
+.form-page-shell::after { content: ''; position: absolute; z-index: -1; width: min(760px, 85vw); height: 760px; top: 8%; right: -22%; border: 1px solid rgba(8,127,130,.12); border-radius: 50%; box-shadow: 0 0 0 36px rgba(8,127,130,.025), 0 0 0 72px rgba(8,127,130,.02); }
+.form-page-panel { width: min(780px, calc(100% - 48px)); margin: auto; padding: 38px 0 42px; }
+.form-page-panel::before { content: ''; display: block; position: absolute; left: 50%; top: 0; width: min(780px, calc(100% - 48px)); height: 100%; transform: translateX(-50%); z-index: -1; border-left: 1px solid rgba(255,255,255,.7); border-right: 1px solid rgba(255,255,255,.7); pointer-events: none; }
+.form-page-panel .auth-copy { margin-top: 58px; }
+.form-page-panel .hospital-form { padding: 24px 26px 22px; border: 1px solid rgba(226,232,239,.95); border-radius: 14px; background: rgba(255,255,255,.78); box-shadow: 0 20px 55px rgba(16,45,60,.08); backdrop-filter: blur(8px); }
+.form-page-panel .auth-demo { padding-left: 26px; }
 .auth-brand { color: var(--navy); padding: 0; }
 .auth-copy { margin: 72px 0 30px; }
 .auth-copy h1 { margin: 8px 0 10px; color: var(--navy); font-size: 38px; letter-spacing: -1.2px; }
@@ -67,7 +75,7 @@ button { cursor: pointer; }
 .auth-stat { display: flex; align-items: baseline; gap: 11px; margin-top: 64px; padding-top: 22px; border-top: 1px solid #36525d; }
 .auth-stat strong { font-size: 32px; color: #63d0c1; }
 .auth-stat span { color: #a9c0c3; font-size: 12px; }
-@media (max-width: 720px) { .auth-shell { display: block; }.auth-panel { width: min(460px, calc(100% - 36px)); padding: 26px 0 38px; }.auth-copy { margin: 62px 0 28px; }.auth-copy h1 { font-size: 32px; }.auth-aside { min-height: 260px; padding: 38px 28px; }.auth-aside-mark { margin-bottom: 26px; }.auth-aside h2 { font-size: 31px; }.auth-stat { margin-top: 32px; } }
+@media (max-width: 720px) { .auth-shell { display: block; }.auth-panel { width: min(460px, calc(100% - 36px)); padding: 26px 0 38px; }.auth-copy { margin: 62px 0 28px; }.auth-copy h1 { font-size: 32px; }.auth-aside { min-height: 260px; padding: 38px 28px; }.auth-aside-mark { margin-bottom: 26px; }.auth-aside h2 { font-size: 31px; }.auth-stat { margin-top: 32px; }.form-page-panel { width: min(780px, calc(100% - 36px)); padding-top: 26px; }.form-page-panel::before { width: min(780px, calc(100% - 36px)); }.form-page-panel .auth-copy { margin-top: 48px; }.form-page-panel .hospital-form { padding: 20px 18px 18px; }.form-page-panel .auth-demo { padding-left: 0; } }
 .heading-actions { display:flex; align-items:flex-end; gap:14px; }
 .hospital-actions { display:flex; gap:8px; }
 .hospital-actions .primary-button,.hospital-actions .outline-button { white-space:nowrap; }
