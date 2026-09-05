@@ -229,5 +229,33 @@ function HospitalFormDrawer({ form, onClose, onSubmit }: { form: HospitalForm; o
 }
 
 function SignInPage({ email, password, onEmailChange, onPasswordChange, onSubmit }: { email: string; password: string; onEmailChange: (value: string) => void; onPasswordChange: (value: string) => void; onSubmit: (event: React.FormEvent<HTMLFormElement>) => void }) {
-  return <main className="auth-shell"><section className="auth-panel"><div className="brand auth-brand"><div className="brand-mark"><HeartPulse /></div><span>Organ<span className="brand-accent">Ease</span></span></div><div className="auth-copy"><p className="eyebrow">Transplant coordination, simplified</p><h1>Welcome back</h1><p>Sign in to find compatible organs and keep urgent transfers moving.</p></div><form className="auth-form" onSubmit={onSubmit}><label htmlFor="email">Work email</label><div className="auth-input"><Mail /><input id="email" type="email" value={email} onChange={(event) => onEmailChange(event.target.value)} required /></div><label htmlFor="password">Password</label><div className="auth-input"><LockKeyhole /><input id="password" type="password" value={password} onChange={(event) => onPasswordChange(event.target.value)} required /></div><button className="primary-button auth-submit" type="submit">Sign in <ArrowUpRight /></button></form><p className="auth-demo"><ShieldCheck /> Demo access is enabled. Use any valid email and password.</p></section><aside className="auth-aside"><div className="auth-aside-mark"><HeartPulse /></div><h2>Every minute matters.</h2><p>One connected workspace for recipients, hospitals, and procurement centres.</p><div className="auth-stat"><strong>24</strong><span>organs available nearby</span></div></aside></main>
+  const [mode, setMode] = useState<'sign-in' | 'register'>('sign-in')
+  const [name, setName] = useState('')
+  const [role, setRole] = useState('Recipient')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+
+  const register = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (password.length < 8) {
+      setError('Use a password with at least 8 characters.')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+    window.localStorage.setItem('organease-account', JSON.stringify({ name, email, password, role }))
+    window.sessionStorage.setItem('organease-session', 'signed-in')
+    window.sessionStorage.setItem('organease-role', role === 'Procurement centre' ? 'center' : 'recipient')
+    window.location.reload()
+  }
+
+  const switchMode = (nextMode: 'sign-in' | 'register') => {
+    setMode(nextMode)
+    setError('')
+    setConfirmPassword('')
+  }
+
+  return <main className="auth-shell"><section className="auth-panel"><div className="brand auth-brand"><div className="brand-mark"><HeartPulse /></div><span>Organ<span className="brand-accent">Ease</span></span></div><div className="auth-copy"><p className="eyebrow">Transplant coordination, simplified</p><h1>{mode === 'sign-in' ? 'Welcome back' : 'Create your account'}</h1><p>{mode === 'sign-in' ? 'Sign in to find compatible organs and keep urgent transfers moving.' : 'Join the verified network for faster, clearer transplant coordination.'}</p></div><div className="auth-tabs" role="tablist" aria-label="Account access"><button type="button" className={mode === 'sign-in' ? 'auth-tab active' : 'auth-tab'} onClick={() => switchMode('sign-in')}>Sign in</button><button type="button" className={mode === 'register' ? 'auth-tab active' : 'auth-tab'} onClick={() => switchMode('register')}>Create account</button></div>{error && <p className="auth-error" role="alert">{error}</p>}{mode === 'sign-in' ? <form className="auth-form" onSubmit={onSubmit}><label htmlFor="email">Work email</label><div className="auth-input"><Mail /><input id="email" type="email" value={email} onChange={(event) => onEmailChange(event.target.value)} required /></div><label htmlFor="password">Password</label><div className="auth-input"><LockKeyhole /><input id="password" type="password" value={password} onChange={(event) => onPasswordChange(event.target.value)} required /></div><button className="primary-button auth-submit" type="submit">Sign in <ArrowUpRight /></button></form> : <form className="auth-form" onSubmit={register}><label htmlFor="name">Full name</label><div className="auth-input"><UserRound /><input id="name" type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Arjun Kapoor" required /></div><label htmlFor="register-email">Work email</label><div className="auth-input"><Mail /><input id="register-email" type="email" value={email} onChange={(event) => onEmailChange(event.target.value)} placeholder="you@hospital.org" required /></div><label htmlFor="role">Your role</label><div className="auth-input"><ShieldCheck /><select id="role" value={role} onChange={(event) => setRole(event.target.value)}><option>Recipient</option><option>Hospital coordinator</option><option>Procurement centre</option></select></div><label htmlFor="register-password">Password</label><div className="auth-input"><LockKeyhole /><input id="register-password" type="password" value={password} onChange={(event) => onPasswordChange(event.target.value)} minLength={8} placeholder="At least 8 characters" required /></div><label htmlFor="confirm-password">Confirm password</label><div className="auth-input"><LockKeyhole /><input id="confirm-password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required /></div><button className="primary-button auth-submit" type="submit">Create account <ArrowUpRight /></button></form>}<p className="auth-demo"><ShieldCheck /> {mode === 'sign-in' ? 'Demo access is enabled. Use any valid email and password.' : 'Your demo account is stored only in this browser.'}</p></section><aside className="auth-aside"><div className="auth-aside-mark"><HeartPulse /></div><h2>Every minute matters.</h2><p>One connected workspace for recipients, hospitals, and procurement centres.</p><div className="auth-stat"><strong>24</strong><span>organs available nearby</span></div></aside></main>
 }
