@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server'
 import { ObjectId } from 'mongodb'
 import getMongoClient from '@/lib/mongodb'
 
+function withTimeout<T>(promise: Promise<T>, milliseconds: number) {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Database request timed out')), milliseconds)),
+  ])
+}
+
 export async function GET() {
   try {
     const client = await getMongoClient()
@@ -29,14 +36,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'A valid available date is required' }, { status: 400 })
     }
 
-    const client = await getMongoClient()
-    const collection = client.db(process.env.MONGODB_DB ?? 'organease').collection('availability')
     const availability = { id: `AVL-${Date.now().toString().slice(-8)}`, ...values, status: 'Pending verification', createdAt: new Date() }
-    await collection.insertOne(availability)
+    await withTimeout((async () => {
+      const client = await getMongoClient()
+      const collection = client.db(process.env.MONGODB_DB ?? 'organease').collection('availability')
+      await collection.insertOne(availability)
+    })(), 12000)
+
     return NextResponse.json({ id: availability.id, message: 'Availability submitted for verification' }, { status: 201 })
   } catch (error) {
     if (error instanceof SyntaxError) return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 })
-    return NextResponse.json({ error: 'Unable to submit availability' }, { status: 500 })
+    console.error('[availability] submission failed', error instanceof Error ? error.message : 'Unknown database error')
+    return NextResponse.json({ error: 'Unable to submit availability. Please try again.' }, { status: 503 })
   }
 }
 

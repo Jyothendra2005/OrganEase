@@ -11,7 +11,17 @@ export default async function getMongoClient() {
   const existingClientPromise = globalWithMongo._mongoClientPromise
   if (existingClientPromise) return existingClientPromise
 
-  const promise = new MongoClient(uri).connect()
-  if (process.env.NODE_ENV !== 'production') globalWithMongo._mongoClientPromise = promise
+  const promise = new MongoClient(uri, {
+    serverSelectionTimeoutMS: 8000,
+    connectTimeoutMS: 8000,
+    socketTimeoutMS: 10000,
+    maxPoolSize: 10,
+  }).connect()
+
+  globalWithMongo._mongoClientPromise = promise
+  promise.catch(() => {
+    if (globalWithMongo._mongoClientPromise === promise) delete globalWithMongo._mongoClientPromise
+  })
+
   return promise
 }
