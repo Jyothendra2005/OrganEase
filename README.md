@@ -22,6 +22,21 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## MongoDB setup
+
+1. Create a MongoDB Atlas cluster or use a local MongoDB server and copy its connection string.
+2. Create `.env.local` in the project root using `.env.example` as a template:
+
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DB=organease
+```
+
+3. Add your development machine IP address to the MongoDB Atlas network access list.
+4. Run `pnpm dev` and open `http://localhost:3000`.
+
+The app uses the `inventory`, `requests`, and `availability` collections. Demo inventory and requests are inserted automatically when those collections are empty. Never commit `.env.local` or put `MONGODB_URI` in a client component.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 ## Learn More

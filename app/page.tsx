@@ -44,6 +44,16 @@ type Organ = {
   center: string
 }
 
+type Availability = {
+  id: string
+  hospitalName: string
+  organType: string
+  bloodGroup: string
+  location: string
+  status?: string
+  createdAt?: string
+}
+
 const inventory: Organ[] = [
   { id: 'ORG-4821', organ: 'Kidney', donor: 'Anonymous donor', blood: 'O+', location: 'Pune Procurement Centre', distance: '14 km', preservation: 'Hypothermic storage', expires: '05h 42m', urgency: 'Critical', center: 'Pune PPC' },
   { id: 'ORG-4818', organ: 'Liver', donor: 'Anonymous donor', blood: 'A+', location: 'Ruby Hall Transplant Unit', distance: '22 km', preservation: 'Hypothermic storage', expires: '11h 18m', urgency: 'Priority', center: 'Ruby Hall' },
@@ -83,7 +93,9 @@ export default function Page() {
   const [bloodFilter, setBloodFilter] = useState('All blood groups')
   const [urgencyOnly, setUrgencyOnly] = useState(false)
   const [selected, setSelected] = useState<Organ | null>(null)
+  const [inventoryItems, setInventoryItems] = useState(inventory)
   const [requests, setRequests] = useState(initialRequests)
+  const [availability, setAvailability] = useState<Availability[]>([])
   const [paid, setPaid] = useState(false)
   const [notice, setNotice] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -113,6 +125,11 @@ export default function Page() {
     } else if (savedRole === 'center') {
       setRole('center')
     }
+    Promise.all([fetch('/api/inventory'), fetch('/api/requests'), fetch('/api/availability')]).then(async ([inventoryResponse, requestsResponse, availabilityResponse]) => {
+      if (inventoryResponse.ok) setInventoryItems(await inventoryResponse.json())
+      if (requestsResponse.ok) setRequests(await requestsResponse.json())
+      if (availabilityResponse.ok) setAvailability(await availabilityResponse.json())
+    }).catch(() => setNotice('Unable to load live data'))
   }, [])
 
   useEffect(() => {
@@ -129,7 +146,7 @@ export default function Page() {
     setIsSignedIn(true)
   }
 
-  const filtered = useMemo(() => inventory.filter((item) =>
+  const filtered = useMemo(() => inventoryItems.filter((item) =>
     (region === 'Pune region' || item.location.toLowerCase().includes(region.replace(' region', '').toLowerCase())) &&
     (organFilter === 'All organs' || item.organ === organFilter) &&
     (bloodFilter === 'All blood groups' || item.blood === bloodFilter) &&
@@ -142,18 +159,36 @@ export default function Page() {
   }
 
   const openRequest = (organ: Organ) => { setSelected(organ); setPaid(false) }
-  const submitRequest = () => {
+  const submitRequest = async () => {
     if (!selected) return
-    setRequests((current) => [{ id: `REQ-${2100 + current.length}`, organ: selected.organ, blood: selected.blood, hospital: 'Sahyadri Hospitals', age: 'Just now', status: 'Awaiting payment', urgent: selected.urgency === 'Critical' }, ...current])
+    const response = await fetch('/api/requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ organ: selected.organ, blood: selected.blood, hospital: 'Sahyadri Hospitals', urgent: selected.urgency === 'Critical' }) })
+    if (!response.ok) return setNotice('Unable to create request')
+    const newRequest = await response.json()
+    setRequests((current) => [newRequest, ...current])
     setNotice('Request created. Complete the token payment to notify the procurement centre.')
     setSelected(null)
   }
-  const confirmRequest = (id: string) => {
+  const confirmRequest = async (id: string) => {
+    const response = await fetch('/api/requests', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    if (!response.ok) return setNotice('Unable to confirm request')
     setRequests((current) => current.map((request) => request.id === id ? { ...request, status: 'Confirmed' } : request))
     setNotice(`${id} confirmed. The recipient has been notified.`)
   }
-  const submitHospitalForm = (event: React.FormEvent<HTMLFormElement>, form: HospitalForm) => {
+  const verifyAvailability = async (id: string) => {
+    const response = await fetch('/api/availability', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    if (!response.ok) return setNotice('Unable to verify availability')
+    setAvailability((current) => current.map((item) => item.id === id ? { ...item, status: 'Available' } : item))
+    const inventoryResponse = await fetch('/api/inventory')
+    if (inventoryResponse.ok) setInventoryItems(await inventoryResponse.json())
+    setNotice('Availability verified and added to available organs.')
+  }
+  const submitHospitalForm = async (event: React.FormEvent<HTMLFormElement>, form: HospitalForm) => {
     event.preventDefault()
+    if (form === 'availability') {
+      const values = Object.fromEntries(new FormData(event.currentTarget).entries())
+      const response = await fetch('/api/availability', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) })
+      if (!response.ok) return setNotice('Unable to submit availability')
+    }
     setHospitalForm(null)
     setNotice(form === 'availability' ? 'Organ availability submitted for verification.' : 'Organ request submitted to the regional network.')
   }
@@ -190,7 +225,8 @@ export default function Page() {
             <div className="filter-row"><div className="filter-search"><Search /><input aria-label="Search available organs" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search by organ or centre" /></div><select value={organFilter} onChange={(e) => setOrganFilter(e.target.value)} aria-label="Filter by organ"><option>All organs</option><option>Kidney</option><option>Liver</option><option>Heart</option><option>Pancreas</option></select><select value={bloodFilter} onChange={(e) => setBloodFilter(e.target.value)} aria-label="Filter by blood group"><option>All blood groups</option><option>O+</option><option>A+</option><option>B+</option><option>AB+</option><option>O-</option></select><button className={`filter-button ${urgencyOnly ? 'selected' : ''}`} onClick={() => setUrgencyOnly(!urgencyOnly)}><SlidersHorizontal />Urgent only</button></div>
             <div className="inventory-table"><div className="table-header"><span>Organ & status</span><span>Compatibility</span><span>Location</span><span>Preservation window</span><span /></div>{filtered.map((item) => <div className="organ-row" key={item.id}><div className="organ-cell"><div className={`organ-symbol ${item.organ.toLowerCase()}`}>{item.organ === 'Heart' ? <HeartPulse /> : <Droplets />}</div><div><strong>{item.organ}</strong><span>{item.id} · {item.donor}</span><StatusBadge status={item.urgency} /></div></div><div><strong className="blood-pill">{item.blood}</strong><span className="cell-muted">Compatible group</span></div><div><strong>{item.location}</strong><span className="cell-muted"><MapPin />{item.distance} away</span></div><div><strong className={item.urgency === 'Critical' ? 'time-critical' : ''}>{item.expires}</strong><span className="cell-muted">{item.preservation}</span></div><button className="request-button" onClick={() => openRequest(item)}>View & request <ArrowUpRight /></button></div>)}{filtered.length === 0 && <div className="empty-state"><Search /><strong>No organs match these filters</strong><span>Try clearing an eligibility or urgency filter.</span></div>}</div>
             <div className="below-grid"><div id="my-requests" className="panel"><div className="panel-head"><div><h2>Recent requests</h2><p>Track your active organ requests</p></div><Link className="text-button" href="/requests">View all <ArrowUpRight /></Link></div>{requests.slice(0, 3).map((request) => <div className="request-row" key={request.id}><div className="request-icon"><FileText /></div><div className="request-main"><strong>{request.organ} · {request.blood}</strong><span>{request.id} · {request.hospital}</span></div><span className="request-age">{request.age}</span><StatusBadge status={request.status} /></div>)}</div><div id="messages" className="help-card"><div className="help-icon"><ShieldCheck /></div><h3>Need help coordinating?</h3><p>Our transfer desk is available for urgent cases and centre coordination.</p><button className="outline-button" onClick={() => setTransferOpen(true)}>Contact transfer desk <ArrowUpRight /></button></div></div>
-          </> : <ProcurementView requests={requests} onConfirm={confirmRequest} />}
+            <div className="below-grid"><div id="my-requests" className="panel"><div className="panel-head"><div><h2>Recent requests</h2><p>Track your active organ requests</p></div><button className="text-button" onClick={() => navigateTo('My requests')}>View all <ArrowUpRight /></button></div>{requests.slice(0, 3).map((request) => <div className="request-row" key={request.id}><div className="request-icon"><FileText /></div><div className="request-main"><strong>{request.organ} · {request.blood}</strong><span>{request.id} · {request.hospital}</span></div><span className="request-age">{request.age}</span><StatusBadge status={request.status} /></div>)}</div><div id="messages" className="help-card"><div className="help-icon"><ShieldCheck /></div><h3>Need help coordinating?</h3><p>Our transfer desk is available for urgent cases and centre coordination.</p><button className="outline-button">Contact transfer desk <ArrowUpRight /></button></div></div>
+          </> : <><ProcurementView requests={requests} availability={availability} onConfirm={confirmRequest} /><AvailabilityView availability={availability} onVerify={verifyAvailability} /></>}
           <footer>OrganEase is a coordination prototype for transplant networks. <span>Privacy & compliance</span><span>Support</span><span>v0.8.2</span></footer>
         </div>
       </section>
@@ -219,7 +255,11 @@ function SettingsDrawer({ onClose, onSave }: { onClose: () => void; onSave: () =
   return <div className="drawer-backdrop" onClick={onClose}><section className="request-drawer settings-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><div><span className="eyebrow">Account preferences</span><h2>Settings</h2></div><button className="icon-button" onClick={onClose} aria-label="Close settings"><X /></button></div><div className="settings-section"><h3>Notifications</h3><label className="settings-toggle"><span><strong>Email updates</strong><small>Receive updates about requests and transfers.</small></span><input type="checkbox" checked={emailAlerts} onChange={(event) => setEmailAlerts(event.target.checked)} /><i /></label><label className="settings-toggle"><span><strong>Urgent case alerts</strong><small>Get notified when a critical organ matches your profile.</small></span><input type="checkbox" checked={urgentAlerts} onChange={(event) => setUrgentAlerts(event.target.checked)} /><i /></label></div><div className="settings-section"><h3>Dashboard</h3><label className="settings-toggle"><span><strong>Compact layout</strong><small>Use a denser view for inventory and requests.</small></span><input type="checkbox" checked={compactLayout} onChange={(event) => setCompactLayout(event.target.checked)} /><i /></label><label className="settings-select"><span>Default region</span><select defaultValue="Pune region"><option>Pune region</option><option>Mumbai region</option><option>Nashik region</option><option>Nagpur region</option></select></label></div><div className="form-actions settings-actions"><button className="text-button" onClick={onClose}>Cancel</button><button className="primary-button" onClick={onSave}>Save settings <Check /></button></div></section></div>
 }
 
-function ProcurementView({ requests, onConfirm }: { requests: typeof initialRequests; onConfirm: (id: string) => void }) {
+function AvailabilityView({ availability, onVerify }: { availability: Availability[]; onVerify: (id: string) => void }) {
+  return <section className="panel availability-panel"><div className="panel-head"><div><h2>Submitted availability</h2><p>Hospital listings awaiting verification</p></div><span className="nav-count">{availability.length}</span></div>{availability.length === 0 ? <div className="empty-state"><ClipboardPlus /><strong>No availability submitted</strong><span>New hospital listings will appear here.</span></div> : availability.slice(0, 8).map((item, index) => <div className="request-row" key={`${item.id}-${item.createdAt ?? index}`}><div className="request-icon"><PackageCheck /></div><div className="request-main"><strong>{item.organType} · {item.bloodGroup}</strong><span>{item.hospitalName} · {item.location}</span></div><StatusBadge status={item.status ?? 'Pending verification'} />{item.status !== 'Available' && <button className="primary-button small" onClick={() => onVerify(item.id)}>Verify and add <Check /></button>}</div>)}</section>
+}
+
+function ProcurementView({ requests, availability, onConfirm }: { requests: typeof initialRequests; availability: Availability[]; onConfirm: (id: string) => void }) {
   return <><div className="center-hero"><div><p className="eyebrow">Pune regional network · Live</p><h2>Requests to confirm</h2><p>Review hospital requests and confirm available transfers from your centre.</p></div><div className="center-status"><span className="live-dot" />Centre online<strong>12 organs listed</strong></div></div><div className="center-metrics"><div><span>Awaiting confirmation</span><strong>{requests.filter((r) => r.status === 'Awaiting payment').length + 2}</strong><em>Needs review</em></div><div><span>In active transfer</span><strong>04</strong><em>Across the region</em></div><div><span>Centre response time</span><strong>11 min</strong><em>18% faster this week</em></div></div><div className="panel requests-panel"><div className="panel-head"><div><h2>Incoming requests</h2><p>Requests are prioritized by preservation window</p></div><button className="outline-button"><SlidersHorizontal />Filter</button></div>{requests.map((request) => <div className="incoming-row" key={request.id}><div className="priority-bar" data-urgent={request.urgent} /><div className="request-icon"><FileText /></div><div className="request-main"><div><strong>{request.organ} · {request.blood}</strong>{request.urgent && <StatusBadge status="Critical" />}</div><span>{request.id} · {request.hospital} · {request.age}</span></div><div className="incoming-status"><span>Status</span><strong>{request.status}</strong></div>{request.status === 'Awaiting payment' ? <button className="primary-button small" onClick={() => onConfirm(request.id)}>Confirm request <Check /></button> : <span className="confirmed"><Check />Confirmed</span>}</div>)}</div><div className="center-bottom"><div className="panel mini-panel"><div className="panel-head"><div><h2>Storage overview</h2><p>Current centre inventory</p></div><button className="text-button">Manage <ArrowUpRight /></button></div><div className="storage-line"><span>Kidneys</span><strong>08</strong><div><i style={{ width: '62%' }} /></div></div><div className="storage-line"><span>Livers</span><strong>03</strong><div><i style={{ width: '38%' }} /></div></div><div className="storage-line"><span>Other</span><strong>05</strong><div><i style={{ width: '48%' }} /></div></div></div><div className="help-card"><div className="help-icon"><Bell /></div><h3>Keep your centre visible</h3><p>Update storage availability so hospitals can find organs without making calls.</p><button className="outline-button">Update inventory <ArrowUpRight /></button></div></div></>
 }
 
