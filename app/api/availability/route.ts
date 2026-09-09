@@ -16,13 +16,26 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    if (!body.hospitalName || !body.organType || !body.bloodGroup || !body.location) return NextResponse.json({ error: 'Hospital, organ, blood group, and location are required' }, { status: 400 })
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'A valid availability payload is required' }, { status: 400 })
+    }
+
+    const fields = ['hospitalName', 'contactPerson', 'contactEmail', 'contactPhone', 'organType', 'bloodGroup', 'location', 'availableDate', 'compatibilityDetails'] as const
+    const values = Object.fromEntries(fields.map((field) => [field, typeof body[field] === 'string' ? body[field].trim() : ''])) as Record<(typeof fields)[number], string>
+    const missingField = fields.find((field) => !values[field])
+    if (missingField) return NextResponse.json({ error: `${missingField} is required` }, { status: 400 })
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(values.contactEmail)) return NextResponse.json({ error: 'A valid contact email is required' }, { status: 400 })
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(values.availableDate) || Number.isNaN(Date.parse(`${values.availableDate}T00:00:00`))) {
+      return NextResponse.json({ error: 'A valid available date is required' }, { status: 400 })
+    }
+
     const client = await getMongoClient()
     const collection = client.db(process.env.MONGODB_DB ?? 'organease').collection('availability')
-    const availability = { id: `AVL-${Date.now().toString().slice(-8)}`, ...body, status: 'Pending verification', createdAt: new Date() }
+    const availability = { id: `AVL-${Date.now().toString().slice(-8)}`, ...values, status: 'Pending verification', createdAt: new Date() }
     await collection.insertOne(availability)
     return NextResponse.json({ id: availability.id, message: 'Availability submitted for verification' }, { status: 201 })
-  } catch {
+  } catch (error) {
+    if (error instanceof SyntaxError) return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 })
     return NextResponse.json({ error: 'Unable to submit availability' }, { status: 500 })
   }
 }
